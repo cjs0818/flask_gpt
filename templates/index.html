@@ -34,8 +34,8 @@
 
             try {
                 recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.lang = 'ko-KR'; // 한국어로 설정
-                // recognition.lang = 'en-US'; // 영어로 설정  
+                recognition.lang = 'ko-KR'; // 한국어 설정
+                //recognition.lang = 'ko-KR'; // 영어 설정
                 recognition.interimResults = false;
                 recognition.maxAlternatives = 1;
 
@@ -56,8 +56,11 @@
 
                 recognition.onend = () => {
                     console.log("음성 인식이 종료되었습니다.");
-                    recognizing = false;
-                    document.getElementById('voiceButton').innerText = '🎤 음성 시작';
+                    if (recognizing) { // 사용자가 종료하지 않았다면 재시작
+                        recognition.start();
+                    } else {
+                        document.getElementById('voiceButton').innerText = '🎤 음성 시작';
+                    }
                 };
 
             } catch (error) {
