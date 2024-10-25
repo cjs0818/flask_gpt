@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatGPT with Flask</title>
+    <title>ChatGPT와 대화하기</title>
     <style>
         body { font-family: Arial, sans-serif; }
         .chat-container { width: 50%; margin: 0 auto; }
@@ -13,12 +13,12 @@
 </head>
 <body>
     <div class="chat-container">
-        <h2>Chat with ChatGPT</h2>
+        <h2>ChatGPT와 대화하기</h2>
         <div class="messages" id="messages"></div>
         <div class="input-group">
-            <input type="text" id="userInput" placeholder="Type your message here..." style="width: 70%;" />
-            <button onclick="sendMessage()">Send</button>
-            <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 Start Voice</button>
+            <input type="text" id="userInput" placeholder="여기에 메시지를 입력하세요..." style="width: 70%;" />
+            <button onclick="sendMessage()">전송</button>
+            <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 음성 시작</button>
         </div>
     </div>
 
@@ -26,46 +26,45 @@
         let recognition;
         let recognizing = false;
 
-        // 음성 인식 초기화
         function initializeSpeechRecognition() {
             if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
-                alert("This browser does not support Speech Recognition.");
+                alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
                 return;
             }
 
             try {
                 recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.lang = 'en-US';
+                recognition.lang = 'ko-KR'; // 한국어로 설정
+                // recognition.lang = 'en-US'; // 영어로 설정  
                 recognition.interimResults = false;
                 recognition.maxAlternatives = 1;
 
                 recognition.onstart = () => {
-                    console.log("Voice recognition started...");
+                    console.log("음성 인식이 시작되었습니다...");
                 };
 
                 recognition.onresult = (event) => {
                     const transcript = event.results[0][0].transcript;
                     document.getElementById('userInput').value = transcript;
-                    console.log("Recognized text: ", transcript);
+                    console.log("인식된 텍스트:", transcript);
                     sendMessage();
                 };
 
                 recognition.onerror = (event) => {
-                    console.error("Speech recognition error detected:", event.error);
+                    console.error("음성 인식 오류:", event.error);
                 };
 
                 recognition.onend = () => {
-                    console.log("Voice recognition ended.");
+                    console.log("음성 인식이 종료되었습니다.");
                     recognizing = false;
-                    document.getElementById('voiceButton').innerText = '🎤 Start Voice';
+                    document.getElementById('voiceButton').innerText = '🎤 음성 시작';
                 };
 
             } catch (error) {
-                console.error("Error initializing SpeechRecognition:", error);
+                console.error("음성 인식 초기화 오류:", error);
             }
         }
 
-        // 음성 인식 토글
         function toggleSpeechRecognition() {
             if (!recognition) {
                 initializeSpeechRecognition();
@@ -75,12 +74,12 @@
                 if (recognizing) {
                     recognition.stop();
                     recognizing = false;
-                    document.getElementById('voiceButton').innerText = '🎤 Start Voice';
+                    document.getElementById('voiceButton').innerText = '🎤 음성 시작';
                 } else {
                     recognition.start();
                     recognizing = true;
-                    document.getElementById('voiceButton').innerText = '🎤 Stop Voice';
-                    console.log("Recognition started");
+                    document.getElementById('voiceButton').innerText = '🎤 음성 중지';
+                    console.log("음성 인식이 시작되었습니다");
                 }
             }
         }
@@ -91,7 +90,7 @@
 
             const messagesDiv = document.getElementById('messages');
             const userMessageDiv = document.createElement('div');
-            userMessageDiv.innerHTML = '<b>You:</b> ' + userMessage;
+            userMessageDiv.innerHTML = '<b>사용자:</b> ' + userMessage;
             messagesDiv.appendChild(userMessageDiv);
 
             fetch('/get', {
@@ -104,7 +103,7 @@
             .then(response => response.text())
             .then(data => {
                 const botMessageDiv = document.createElement('div');
-                botMessageDiv.innerHTML = '<b>Bot:</b> ' + data;
+                botMessageDiv.innerHTML = '<b>봇:</b> ' + data;
                 messagesDiv.appendChild(botMessageDiv);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
             });
