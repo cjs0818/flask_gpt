@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT with Flask</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .chat-container { width: 50%; margin: 0 auto; }
+        .messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
+        .input-group { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Chat with ChatGPT</h2>
+        <div class="messages" id="messages"></div>
+        <div class="input-group">
+            <input type="text" id="userInput" placeholder="Type your message here..." style="width: 70%;" />
+            <button onclick="sendMessage()">Send</button>
+            <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 Start Voice</button>
+        </div>
+    </div>
+
+    <script>
+        let recognition;
+        let recognizing = false;
+
+        // 음성 인식 초기화
+        function initializeSpeechRecognition() {
+            if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+                alert("This browser does not support Speech Recognition.");
+                return;
+            }
+
+            try {
+                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = () => {
+                    console.log("Voice recognition started...");
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('userInput').value = transcript;
+                    console.log("Recognized text: ", transcript);
+                    sendMessage();
+                };
+
+                recognition.onerror = (event) => {
+                    console.error("Speech recognition error detected:", event.error);
+                };
+
+                recognition.onend = () => {
+                    console.log("Voice recognition ended.");
+                    recognizing = false;
+                    document.getElementById('voiceButton').innerText = '🎤 Start Voice';
+                };
+
+            } catch (error) {
+                console.error("Error initializing SpeechRecognition:", error);
+            }
+        }
+
+        // 음성 인식 토글
+        function toggleSpeechRecognition() {
+            if (!recognition) {
+                initializeSpeechRecognition();
+            }
+
+            if (recognition) {
+                if (recognizing) {
+                    recognition.stop();
+                    recognizing = false;
+                    document.getElementById('voiceButton').innerText = '🎤 Start Voice';
+                } else {
+                    recognition.start();
+                    recognizing = true;
+                    document.getElementById('voiceButton').innerText = '🎤 Stop Voice';
+                    console.log("Recognition started");
+                }
+            }
+        }
+
+        function sendMessage() {
+            const userMessage = document.getElementById('userInput').value;
+            if (userMessage.trim() === '') return;
+
+            const messagesDiv = document.getElementById('messages');
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.innerHTML = '<b>You:</b> ' + userMessage;
+            messagesDiv.appendChild(userMessageDiv);
+
+            fetch('/get', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: 'msg=' + encodeURIComponent(userMessage)
+            })
+            .then(response => response.text())
+            .then(data => {
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.innerHTML = '<b>Bot:</b> ' + data;
+                messagesDiv.appendChild(botMessageDiv);
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
+
+            document.getElementById('userInput').value = '';
+        }
+
+        // "Enter" 키로 메시지 보내기
+        document.getElementById('userInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+                event.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
