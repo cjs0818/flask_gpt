@@ -16,15 +16,18 @@
         <h2>ChatGPT와 대화하기</h2>
         <div class="messages" id="messages"></div>
         <div class="input-group">
-            <input type="text" id="userInput" placeholder="여기에 메시지를 입력하세요..." style="width: 70%;" />
+            <input type="text" id="userInput" placeholder="여기에 메시지를 입력하세요..." style="width: 60%;" />
             <button onclick="sendMessage()">전송</button>
-            <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 음성 시작</button>
+            <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 음성 인식</button>
+            <button id="speakButton" onclick="toggleSpeechSynthesis()">🔊 음성 출력</button>
         </div>
     </div>
 
     <script>
         let recognition;
         let recognizing = false;
+        let speaking = false; // 음성 출력 상태
+        const synth = window.speechSynthesis;
 
         function initializeSpeechRecognition() {
             if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
@@ -34,8 +37,7 @@
 
             try {
                 recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-                recognition.lang = 'ko-KR'; // 한국어 설정
-                //recognition.lang = 'en-US'; // 영어 설정
+                recognition.lang = 'ko-KR';
                 recognition.interimResults = false;
                 recognition.maxAlternatives = 1;
 
@@ -56,10 +58,10 @@
 
                 recognition.onend = () => {
                     console.log("음성 인식이 종료되었습니다.");
-                    if (recognizing) { // 사용자가 종료하지 않았다면 재시작
+                    if (recognizing) {
                         recognition.start();
                     } else {
-                        document.getElementById('voiceButton').innerText = '🎤 음성 시작';
+                        document.getElementById('voiceButton').innerText = '🎤 음성 인식';
                     }
                 };
 
@@ -77,13 +79,31 @@
                 if (recognizing) {
                     recognition.stop();
                     recognizing = false;
-                    document.getElementById('voiceButton').innerText = '🎤 음성 시작';
+                    document.getElementById('voiceButton').innerText = '🎤 음성 인식';
                 } else {
                     recognition.start();
                     recognizing = true;
                     document.getElementById('voiceButton').innerText = '🎤 음성 중지';
                     console.log("음성 인식이 시작되었습니다");
                 }
+            }
+        }
+
+        function toggleSpeechSynthesis() {
+            speaking = !speaking;
+            document.getElementById('speakButton').innerText = speaking ? '🔇 음성 중지' : '🔊 음성 출력';
+
+            // 현재 재생 중인 음성이 있으면 중지
+            if (!speaking && synth.speaking) {
+                synth.cancel();
+            }
+        }
+
+        function speakText(text) {
+            if (speaking && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ko-KR';
+                synth.speak(utterance);
             }
         }
 
@@ -109,12 +129,15 @@
                 botMessageDiv.innerHTML = '<b>봇:</b> ' + data;
                 messagesDiv.appendChild(botMessageDiv);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                // 봇의 응답을 음성으로 출력
+                speakText(data);
             });
 
             document.getElementById('userInput').value = '';
         }
 
-        // "Enter" 키로 메시지 보내기 (keyup 이벤트 사용)
+        // "Enter" 키로 메시지 보내기
         document.getElementById('userInput').addEventListener('keyup', function(event) {
             if (event.key === 'Enter') {
                 sendMessage();
