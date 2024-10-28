@@ -35,7 +35,7 @@
             try {
                 recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
                 recognition.lang = 'ko-KR'; // 한국어 설정
-                //recognition.lang = 'ko-KR'; // 영어 설정
+                //recognition.lang = 'en-US'; // 영어 설정
                 recognition.interimResults = false;
                 recognition.maxAlternatives = 1;
 
