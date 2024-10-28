@@ -44,6 +44,8 @@ def chat():
     
     # 응답에서 메시지 추출
     bot_response = response.choices[0].message.content
+    print("user: " + user_message)
+    print("bot: " + bot_response)
     return bot_response
 
 if __name__ == '__main__':

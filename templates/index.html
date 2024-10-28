@@ -26,7 +26,7 @@
     <script>
         let recognition;
         let recognizing = false;
-        let speaking = false; // 음성 출력 상태
+        let speaking = false;
         const synth = window.speechSynthesis;
 
         function initializeSpeechRecognition() {
@@ -93,7 +93,6 @@
             speaking = !speaking;
             document.getElementById('speakButton').innerText = speaking ? '🔇 음성 중지' : '🔊 음성 출력';
 
-            // 현재 재생 중인 음성이 있으면 중지
             if (!speaking && synth.speaking) {
                 synth.cancel();
             }
@@ -123,15 +122,16 @@
                 },
                 body: 'msg=' + encodeURIComponent(userMessage)
             })
-            .then(response => response.text())
+            .then(response => response.json())
             .then(data => {
                 const botMessageDiv = document.createElement('div');
-                botMessageDiv.innerHTML = '<b>봇:</b> ' + data;
+                //botMessageDiv.innerHTML = `<b>봇:</b> ${data.command} <br> ${data.answer}`;
+                botMessageDiv.innerHTML = `<b>봇:</b> {command: ${data.command}}, <br> {answer: ${data.answer}}`;
                 messagesDiv.appendChild(botMessageDiv);
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-                // 봇의 응답을 음성으로 출력
-                speakText(data);
+                // "answer" 부분만 음성 출력
+                speakText(data.answer);
             });
 
             document.getElementById('userInput').value = '';
