@@ -114,8 +114,8 @@
             document.getElementById('userInput').value = '';
         }
 
-        // "Enter" 키로 메시지 보내기
-        document.getElementById('userInput').addEventListener('keydown', function(event) {
+        // "Enter" 키로 메시지 보내기 (keyup 이벤트 사용)
+        document.getElementById('userInput').addEventListener('keyup', function(event) {
             if (event.key === 'Enter') {
                 sendMessage();
                 event.preventDefault();
