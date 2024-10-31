@@ -102,6 +102,24 @@
             if (speaking && 'speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'ko-KR';
+
+                // 음성 합성 시작 시 음성 인식 중지
+                if (recognizing) {
+                    recognition.stop();
+                    recognizing = false;
+                    document.getElementById('voiceButton').innerText = '🎤 음성 인식';
+                }
+
+                // 음성 합성 종료 후 음성 인식 재개
+                utterance.onend = () => {
+                    console.log("음성 출력이 종료되었습니다.");
+                    if (recognition && !recognizing) {
+                        recognition.start();
+                        recognizing = true;
+                        document.getElementById('voiceButton').innerText = '🎤 음성 중지';
+                    }
+                };
+
                 synth.speak(utterance);
             }
         }
