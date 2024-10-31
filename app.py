@@ -60,16 +60,21 @@ def analyze_emotion():
     nparr = np.frombuffer(img_data, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
-    # 감정 분석 수행 (얼굴이 감지되지 않아도 기본값 반환)
+    # 얼굴 위치 및 감정 분석 수행
     result = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
-    
-    # result가 리스트인지 확인하고, 첫 번째 요소에서 감정 정보를 가져옴
+
+    # 감정 정보 추출 및 얼굴 위치 확인
     if isinstance(result, list):
-        emotion = result[0].get('dominant_emotion', "No Face Detected")
+        dominant_emotion = result[0].get('dominant_emotion', "No Face Detected")
+        region = result[0].get('region', {})
     else:
-        emotion = result.get('dominant_emotion', "No Face Detected")
-    
-    return jsonify({"emotion": emotion})
+        dominant_emotion = result.get('dominant_emotion', "No Face Detected")
+        region = result.get('region', {})
+
+    return jsonify({
+        "emotion": dominant_emotion,
+        "region": region  # 얼굴의 위치 정보
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True, ssl_context=('cert.pem', 'key.pem'))

@@ -10,20 +10,30 @@
         .messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
         .input-group { margin-top: 10px; }
         .emotion-display { margin-top: 10px; font-size: 1.2em; color: blue; }
+        #canvasOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <h2>ChatGPT와 대화하기</h2>
         <div class="messages" id="messages"></div>
-        <div class="emotion-display" id="emotionDisplay">감정: </div>
         <div class="input-group">
             <input type="text" id="userInput" placeholder="여기에 메시지를 입력하세요..." style="width: 60%;" />
             <button onclick="sendMessage()">전송</button>
             <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 음성 인식</button>
             <button id="speakButton" onclick="toggleSpeechSynthesis()">🔊 음성 출력</button>
         </div>
-        <video id="video" autoplay style="display: none;"></video>
+        <div class="emotion-display" id="emotionDisplay">감정: </div>
+        <div style="position: relative; display: inline-block;">
+            <video id="video" autoplay></video>
+            <canvas id="canvasOverlay"></canvas>
+        </div>
     </div>
 
     <script>
@@ -31,14 +41,25 @@
         let recognizing = false;
         let speaking = false;
         const synth = window.speechSynthesis;
+
+        const video = document.getElementById('video');
+        const canvasOverlay = document.getElementById('canvasOverlay');
         const emotionDisplay = document.getElementById("emotionDisplay");
+        const context = canvasOverlay.getContext('2d');
+        
 
         // 웹캠 설정
-        const video = document.getElementById('video');
         navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => video.srcObject = stream)
+            .then(stream => {
+                video.srcObject = stream;
+                video.addEventListener('loadedmetadata', () => {
+                    canvasOverlay.width = video.videoWidth;
+                    canvasOverlay.height = video.videoHeight;
+                });
+            })
             .catch(error => console.error("카메라 접근 오류:", error));
 
+        // 주기적으로 이미지 캡처하여 감정 분석
         function captureImageAndSend() {
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
@@ -56,6 +77,15 @@
                 .then(response => response.json())
                 .then(data => {
                     emotionDisplay.innerText = "감정: " + data.emotion;
+                    
+                    // 얼굴 위치 박스 설정
+                    context.clearRect(0, 0, canvasOverlay.width, canvasOverlay.height);
+                    if (data.region) {
+                        const { x, y, w, h } = data.region;
+                        context.strokeStyle = 'red';
+                        context.lineWidth = 2;
+                        context.strokeRect(x, y, w, h);
+                    }
                 })
                 .catch(error => console.error("감정 분석 오류:", error));
             }, 'image/jpeg');
