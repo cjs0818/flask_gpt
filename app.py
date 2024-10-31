@@ -67,9 +67,17 @@ def analyze_emotion():
     if isinstance(result, list):
         dominant_emotion = result[0].get('dominant_emotion', "No Face Detected")
         region = result[0].get('region', {})
+        sadness_score = result[0]['emotion'].get('sad', 0)
     else:
         dominant_emotion = result.get('dominant_emotion', "No Face Detected")
         region = result.get('region', {})
+        sadness_score = result['emotion'].get('sad', 0)
+
+    # 슬픔 점수 임계값 설정
+    sadness_threshold = 60
+    #print(sadness_score)
+    if dominant_emotion == "sad" and sadness_score < sadness_threshold:
+        dominant_emotion = "neutral"
 
     return jsonify({
         "emotion": dominant_emotion,
