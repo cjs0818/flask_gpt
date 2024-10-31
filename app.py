@@ -1,6 +1,9 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import openai
 import os
+import cv2
+import numpy as np
+from deepface import DeepFace
 
 app = Flask(__name__)
 
@@ -48,6 +51,25 @@ def chat():
     print("user: " + user_message)
     print("bot: " + bot_response)
     return bot_response
+
+# 감정 인식 처리
+@app.route('/analyze_emotion', methods=['POST'])
+def analyze_emotion():
+    # 클라이언트에서 받은 이미지 데이터를 읽어옵니다
+    img_data = request.files['image'].read()
+    nparr = np.frombuffer(img_data, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    # 감정 분석 수행 (얼굴이 감지되지 않아도 기본값 반환)
+    result = DeepFace.analyze(img, actions=['emotion'], enforce_detection=False)
+    
+    # result가 리스트인지 확인하고, 첫 번째 요소에서 감정 정보를 가져옴
+    if isinstance(result, list):
+        emotion = result[0].get('dominant_emotion', "No Face Detected")
+    else:
+        emotion = result.get('dominant_emotion', "No Face Detected")
+    
+    return jsonify({"emotion": emotion})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5050, debug=True, ssl_context=('cert.pem', 'key.pem'))

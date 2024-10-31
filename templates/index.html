@@ -9,18 +9,21 @@
         .chat-container { width: 50%; margin: 0 auto; }
         .messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
         .input-group { margin-top: 10px; }
+        .emotion-display { margin-top: 10px; font-size: 1.2em; color: blue; }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <h2>ChatGPT와 대화하기</h2>
         <div class="messages" id="messages"></div>
+        <div class="emotion-display" id="emotionDisplay">감정: </div>
         <div class="input-group">
             <input type="text" id="userInput" placeholder="여기에 메시지를 입력하세요..." style="width: 60%;" />
             <button onclick="sendMessage()">전송</button>
             <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 음성 인식</button>
             <button id="speakButton" onclick="toggleSpeechSynthesis()">🔊 음성 출력</button>
         </div>
+        <video id="video" autoplay style="display: none;"></video>
     </div>
 
     <script>
@@ -28,7 +31,40 @@
         let recognizing = false;
         let speaking = false;
         const synth = window.speechSynthesis;
+        const emotionDisplay = document.getElementById("emotionDisplay");
 
+        // 웹캠 설정
+        const video = document.getElementById('video');
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => video.srcObject = stream)
+            .catch(error => console.error("카메라 접근 오류:", error));
+
+        function captureImageAndSend() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('image', blob, 'capture.jpg');
+                
+                fetch('/analyze_emotion', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    emotionDisplay.innerText = "감정: " + data.emotion;
+                })
+                .catch(error => console.error("감정 분석 오류:", error));
+            }, 'image/jpeg');
+        }
+
+        // 주기적으로 감정 분석 수행
+        setInterval(captureImageAndSend, 5000);
+
+        // 음성 인식 초기화
         function initializeSpeechRecognition() {
             if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
                 alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
@@ -70,6 +106,7 @@
             }
         }
 
+        // 음성 인식 토글
         function toggleSpeechRecognition() {
             if (!recognition) {
                 initializeSpeechRecognition();
@@ -89,6 +126,7 @@
             }
         }
 
+        // 음성 출력 토글
         function toggleSpeechSynthesis() {
             speaking = !speaking;
             document.getElementById('speakButton').innerText = speaking ? '🔇 음성 중지' : '🔊 음성 출력';
@@ -98,6 +136,7 @@
             }
         }
 
+        // 텍스트 음성 출력
         function speakText(text) {
             if (speaking && 'speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -124,6 +163,7 @@
             }
         }
 
+        // 메시지 전송
         function sendMessage() {
             const userMessage = document.getElementById('userInput').value;
             if (userMessage.trim() === '') return;
