@@ -213,11 +213,21 @@
         function toggleSpeechSynthesis() {
             speaking = !speaking;
             toggleButtonActive(document.getElementById('speakButton'));
+        
+            //if (!speaking && synth.speaking) {
+            //  synth.cancel();
 
-            if (!speaking && synth.speaking) {
-                synth.cancel();
+            // 음성 출력 활성화 시 Safari 호환성 고려
+            if (speaking && 'speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance("음성 출력이 시작됩니다.");
+                utterance.lang = 'ko-KR';
+                utterance.volume = 0.3;  // 볼륨 값을 0.0 ~ 1.0 사이로 설정 (0.8 예시)
+                synth.speak(utterance);
+            } else {
+                synth.cancel(); // 비활성화 시 기존 음성 출력을 중지
             }
         }
+
 
         // 텍스트 음성 출력
         function speakText(text) {
