@@ -28,6 +28,7 @@
             <button onclick="sendMessage()">전송</button>
             <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 음성 인식</button>
             <button id="speakButton" onclick="toggleSpeechSynthesis()">🔊 음성 출력</button>
+            <button id="emotionButton" onclick="toggleEmotionRecognition()">😃 감정 인식</button>
         </div>
         <div class="emotion-display" id="emotionDisplay">감정: </div>
         <div style="position: relative; display: inline-block;">
@@ -37,30 +38,65 @@
     </div>
 
     <script>
+        // 음성 인식 변수
         let recognition;
         let recognizing = false;
         let speaking = false;
         const synth = window.speechSynthesis;
 
+        // 감정 인식 변수
         const video = document.getElementById('video');
         const canvasOverlay = document.getElementById('canvasOverlay');
         const emotionDisplay = document.getElementById("emotionDisplay");
         const context = canvasOverlay.getContext('2d');
-        
+        let emotionRecognitionEnabled = false;  // 감정 인식 상태 변수
 
-        // 웹캠 설정
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                video.srcObject = stream;
-                video.addEventListener('loadedmetadata', () => {
-                    canvasOverlay.width = video.videoWidth;
-                    canvasOverlay.height = video.videoHeight;
-                });
-            })
-            .catch(error => console.error("카메라 접근 오류:", error));
+        // 감정 인식 토글 함수
+        function toggleEmotionRecognition() {
+            emotionRecognitionEnabled = !emotionRecognitionEnabled;
+            document.getElementById('emotionButton').innerText = emotionRecognitionEnabled ? '😶 감정 인식 중지' : '😃 감정 인식';
+            
+            if (emotionRecognitionEnabled) {
+                startEmotionRecognition();
+            } else {
+                stopEmotionRecognition();
+            }
+        }
+
+
+        // 감정 인식 시작 함수
+        function startEmotionRecognition() {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.style.display = 'block';
+                    canvasOverlay.style.display = 'block';
+                    video.addEventListener('loadedmetadata', () => {
+                        canvasOverlay.width = video.videoWidth;
+                        canvasOverlay.height = video.videoHeight;
+                    });
+                })
+                .catch(error => console.error("카메라 접근 오류:", error));
+        }
+
+        // 감정 인식 정지 함수
+        function stopEmotionRecognition() {
+            const stream = video.srcObject;
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop()); // 모든 트랙 정지
+            }
+            video.srcObject = null;
+            video.style.display = 'none';
+            canvasOverlay.style.display = 'none';
+            emotionDisplay.innerText = "감정: ";  // 감정 상태 초기화
+            context.clearRect(0, 0, canvasOverlay.width, canvasOverlay.height);  // 캔버스 초기화
+        }
 
         // 주기적으로 이미지 캡처하여 감정 분석
         function captureImageAndSend() {
+            if (!emotionRecognitionEnabled) return;  // 감정 인식 비활성화 상태면 수행하지 않음
+            
             const canvas = document.createElement('canvas');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
