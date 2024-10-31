@@ -17,6 +17,20 @@
             width: 100%;
             height: auto;
         }
+        /* 버튼 스타일 */
+        button {
+            padding: 10px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: none;
+            background-color: #eee;
+        }
+        /* 버튼이 눌렸을 때(active) 스타일 */
+        button.active {
+            background-color: #007bff;
+            color: white;
+            transform: translateY(2px);
+        }
     </style>
 </head>
 <body>
@@ -51,10 +65,15 @@
         const context = canvasOverlay.getContext('2d');
         let emotionRecognitionEnabled = false;  // 감정 인식 상태 변수
 
+        // 버튼 활성화 시각적 피드백
+        function toggleButtonActive(button) {
+            button.classList.toggle('active');
+        }
+
         // 감정 인식 토글 함수
         function toggleEmotionRecognition() {
             emotionRecognitionEnabled = !emotionRecognitionEnabled;
-            document.getElementById('emotionButton').innerText = emotionRecognitionEnabled ? '😶 감정 인식 중지' : '😃 감정 인식';
+            toggleButtonActive(document.getElementById('emotionButton'));
             
             if (emotionRecognitionEnabled) {
                 startEmotionRecognition();
@@ -162,8 +181,6 @@
                     console.log("음성 인식이 종료되었습니다.");
                     if (recognizing) {
                         recognition.start();
-                    } else {
-                        document.getElementById('voiceButton').innerText = '🎤 음성 인식';
                     }
                 };
 
@@ -182,11 +199,11 @@
                 if (recognizing) {
                     recognition.stop();
                     recognizing = false;
-                    document.getElementById('voiceButton').innerText = '🎤 음성 인식';
+                    toggleButtonActive(document.getElementById('voiceButton'));
                 } else {
                     recognition.start();
                     recognizing = true;
-                    document.getElementById('voiceButton').innerText = '🎤 음성 중지';
+                    toggleButtonActive(document.getElementById('voiceButton'));
                     console.log("음성 인식이 시작되었습니다");
                 }
             }
@@ -195,7 +212,7 @@
         // 음성 출력 토글
         function toggleSpeechSynthesis() {
             speaking = !speaking;
-            document.getElementById('speakButton').innerText = speaking ? '🔇 음성 중지' : '🔊 음성 출력';
+            toggleButtonActive(document.getElementById('speakButton'));
 
             if (!speaking && synth.speaking) {
                 synth.cancel();
@@ -212,7 +229,7 @@
                 if (recognizing) {
                     recognition.stop();
                     recognizing = false;
-                    document.getElementById('voiceButton').innerText = '🎤 음성 인식';
+                    toggleButtonActive(document.getElementById('voiceButton'));
                 }
 
                 // 음성 합성 종료 후 음성 인식 재개
@@ -221,7 +238,7 @@
                     if (recognition && !recognizing) {
                         recognition.start();
                         recognizing = true;
-                        document.getElementById('voiceButton').innerText = '🎤 음성 중지';
+                        toggleButtonActive(document.getElementById('voiceButton'));
                     }
                 };
 
