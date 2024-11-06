@@ -18,28 +18,19 @@
             height: auto;
         }
         /* 버튼 스타일 */
-        button {
-            padding: 10px;
-            margin-right: 5px;
-            cursor: pointer;
-            border: none;
-            background-color: #eee;
-        }
+        button { padding: 10px; margin-right: 5px; cursor: pointer; border: none; background-color: #eee; }
         /* 버튼이 눌렸을 때(active) 스타일 */
-        button.active {
-            background-color: #007bff;
-            color: white;
-            transform: translateY(2px);
-        }
+        button.active { background-color: #007bff; color: white; transform: translateY(2px); }
     </style>
 </head>
 <body>
     <div class="chat-container">
-        <h2>ChatGPT와 대화하기</h2>
+        <h2>KIST 순찰로봇과 대화하기</h2>
         <div class="messages" id="messages"></div>
         <div class="input-group">
             <input type="text" id="userInput" placeholder="여기에 메시지를 입력하세요..." style="width: 60%;" />
             <button onclick="sendMessage()">전송</button>
+            <select id="micSelect" style="padding: 5px; margin-left: 5px;"></select> <!-- 마이크 선택 메뉴 -->
             <button id="voiceButton" onclick="toggleSpeechRecognition()">🎤 음성 인식</button>
             <button id="speakButton" onclick="toggleSpeechSynthesis()">🔊 음성 출력</button>
             <button id="emotionButton" onclick="toggleEmotionRecognition()">😃 감정 인식</button>
@@ -56,6 +47,9 @@
         let recognition;
         let recognizing = false;
         let speaking = false;
+        let selectedMicId = ''; // 선택된 마이크 ID
+        const micSelect = document.getElementById('micSelect');
+        // 음성 출력 변수
         const synth = window.speechSynthesis;
 
         // 감정 인식 변수
@@ -149,14 +143,36 @@
         // 주기적으로 감정 분석 수행
         setInterval(captureImageAndSend, 5000);
 
+        // 페이지 로드 시 오디오 입력 장치 목록 가져오기
+        window.addEventListener('load', populateMicOptions);
+
+        // 오디오 입력 장치 나열 함수
+        async function populateMicOptions() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const audioDevices = devices.filter(device => device.kind === 'audioinput');
+            micSelect.innerHTML = ''; // 기존 옵션 초기화
+            audioDevices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `Microphone ${micSelect.length + 1}`;
+                micSelect.appendChild(option);
+            });
+        }
+
         // 음성 인식 초기화
-        function initializeSpeechRecognition() {
+        async function initializeSpeechRecognition() {
             if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
                 alert("이 브라우저는 음성 인식을 지원하지 않습니다.");
                 return;
             }
 
             try {
+                selectedMicId = micSelect.value; // 선택된 마이크 ID 저장
+
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { deviceId: selectedMicId ? { exact: selectedMicId } : undefined }
+                });
+
                 recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
                 recognition.lang = 'ko-KR';
                 recognition.interimResults = false;
