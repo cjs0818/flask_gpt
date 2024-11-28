@@ -176,41 +176,7 @@
             });
         }
 
-        // 마이크 음량 시각화 시작
-        async function startMicVisualizer() {
-            selectedMicId = micSelect.value; // 선택된 마이크 ID 저장
-
-            if (micStream) {
-                micStream.getTracks().forEach(track => track.stop()); // 이전 스트림 중지
-            }
-
-            micStream = await navigator.mediaDevices.getUserMedia({
-                audio: { deviceId: selectedMicId ? { exact: selectedMicId } : undefined }
-            });
-
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256; // 작은 FFT 크기
-            }
-
-            const source = audioContext.createMediaStreamSource(micStream);
-            source.connect(analyser);
-
-            visualizeMicVolume();
-        }
-
-        // 마이크 음량 시각화 업데이트
-        function visualizeMicVolume() {
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-            function draw() {
-                analyser.getByteFrequencyData(dataArray);
-                const volume = Math.max(...dataArray) / 255; // 0.0 ~ 1.0 사이 값
-                micBar.style.width = `${volume * 100}%`; // 막대바 크기 업데이트
-                requestAnimationFrame(draw); // 반복 호출
-            }
-            draw();
-        }
+ 
         
         // 음성 인식 초기화
         async function initializeSpeechRecognition() {
@@ -253,9 +219,32 @@
                     }
                 };
 
+    
+                // 마이크 음량 시각화 시작
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 256; // 작은 FFT 크기
+                }    
+                const source = audioContext.createMediaStreamSource(stream);
+                source.connect(analyser);
+                visualizeMicVolume();
+
             } catch (error) {
                 console.error("음성 인식 초기화 오류:", error);
             }
+        }
+
+        // 마이크 음량 시각화 업데이트
+        function visualizeMicVolume() {
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            function draw() {
+                analyser.getByteFrequencyData(dataArray);
+                const volume = Math.max(...dataArray) / 255; // 0.0 ~ 1.0 사이 값
+                micBar.style.width = `${volume * 100}%`; // 막대바 크기 업데이트
+                requestAnimationFrame(draw); // 반복 호출
+            }
+            draw();
         }
 
         // 음성 인식 토글
