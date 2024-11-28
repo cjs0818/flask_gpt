@@ -10,12 +10,19 @@
         .messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
         .input-group { margin-top: 10px; }
         .emotion-display { margin-top: 10px; font-size: 1.2em; color: blue; }
-        #canvasOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
+        .mic-visualizer {
+            margin-top: 10px;
             width: 100%;
-            height: auto;
+            height: 20px;
+            background-color: #ddd;
+            position: relative;
+            overflow: hidden;
+        }
+        .mic-visualizer-bar {
+            height: 100%;
+            background-color: #007bff;
+            width: 0;
+            transition: width 0.1s ease-out;
         }
         /* 버튼 스타일 */
         button { padding: 10px; margin-right: 5px; cursor: pointer; border: none; background-color: #eee; }
@@ -35,6 +42,9 @@
             <button id="speakButton" onclick="toggleSpeechSynthesis()">🔊 음성 출력</button>
             <button id="emotionButton" onclick="toggleEmotionRecognition()">😃 감정 인식</button>
         </div>
+        <div class="mic-visualizer">
+            <div id="micBar" class="mic-visualizer-bar"></div> <!-- 음량 막대바 -->
+        </div>
         <div class="emotion-display" id="emotionDisplay">감정: </div>
         <div style="position: relative; display: inline-block;">
             <video id="video" autoplay></video>
@@ -49,6 +59,13 @@
         let speaking = false;
         let selectedMicId = ''; // 선택된 마이크 ID
         const micSelect = document.getElementById('micSelect');
+        const micBar = document.getElementById('micBar'); // 음량 막대바
+
+        // 오디오 시각화 변수
+        let audioContext;
+        let analyser;
+        let micStream;
+
         // 음성 출력 변수
         const synth = window.speechSynthesis;
 
@@ -159,6 +176,42 @@
             });
         }
 
+        // 마이크 음량 시각화 시작
+        async function startMicVisualizer() {
+            selectedMicId = micSelect.value; // 선택된 마이크 ID 저장
+
+            if (micStream) {
+                micStream.getTracks().forEach(track => track.stop()); // 이전 스트림 중지
+            }
+
+            micStream = await navigator.mediaDevices.getUserMedia({
+                audio: { deviceId: selectedMicId ? { exact: selectedMicId } : undefined }
+            });
+
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256; // 작은 FFT 크기
+            }
+
+            const source = audioContext.createMediaStreamSource(micStream);
+            source.connect(analyser);
+
+            visualizeMicVolume();
+        }
+
+        // 마이크 음량 시각화 업데이트
+        function visualizeMicVolume() {
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            function draw() {
+                analyser.getByteFrequencyData(dataArray);
+                const volume = Math.max(...dataArray) / 255; // 0.0 ~ 1.0 사이 값
+                micBar.style.width = `${volume * 100}%`; // 막대바 크기 업데이트
+                requestAnimationFrame(draw); // 반복 호출
+            }
+            draw();
+        }
+        
         // 음성 인식 초기화
         async function initializeSpeechRecognition() {
             if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
